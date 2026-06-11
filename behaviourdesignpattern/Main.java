@@ -13,18 +13,19 @@ class PaymentProcessor {
      * else....
      */
     // lets introduce strategy
-    private PaymentStrategy paymentStrategy;// Since strategy shouldn't change after construction:
+    private PaymentStrategy paymentStrategy;
 
     public PaymentProcessor(PaymentStrategy paymentStrategy) {
         this.paymentStrategy = paymentStrategy;
     }
 
-    void processPayment() {//interface methods are already public and abstract.
+    void processPayment() {// interface methods are already public and abstract.
         paymentStrategy.pay();
     }
+
     public void setPaymentStrategy(PaymentStrategy paymentStrategy) {
-    this.paymentStrategy = paymentStrategy;
-}
+        this.paymentStrategy = paymentStrategy;
+    }
 }
 
 interface PaymentStrategy {
