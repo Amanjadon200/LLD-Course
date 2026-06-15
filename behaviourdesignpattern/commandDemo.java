@@ -12,7 +12,7 @@ public class commandDemo { // client here you will call the commands
         try {
             
             Clipboard clipboard=new Clipboard();
-            TextEditor textEditor=new TextEditor(clipboard);
+            TextEditor textEditor=new TextEditor();
             Command writeCommand=new WriteCommand(textEditor,"aman jadon");
             Command writeCommand1=new WriteCommand(textEditor,"is a greatest coder");
             Invoker invoker=new Invoker();
@@ -20,11 +20,13 @@ public class commandDemo { // client here you will call the commands
             invoker.executeCommand(writeCommand1);
             Command selectCommand=new SelectTextCommand(textEditor,2,5);
             invoker.executeCommand(selectCommand);
-            Command copyCommand=new CopyCommand(textEditor);
+            Command copyCommand=new CopyCommand(textEditor,clipboard);
             invoker.executeCommand(copyCommand);
             Command pasteCommand=new PasteCommand(textEditor,clipboard);
             invoker.executeCommand(pasteCommand);
-            textEditor.printContent();
+                
+        System.out.println("total text : " +textEditor.getData()+ " select content : "+textEditor.getSelectedText()+ " copied content : "+clipboard.getData() );
+
         } catch (Exception e) {
             // TODO: handle exception
             System.out.println(e);
@@ -36,22 +38,18 @@ public class commandDemo { // client here you will call the commands
 class TextEditor { // Receiver
     private StringBuilder data;
     private String selectedText;
-    private Clipboard clipboard;
-    public TextEditor(Clipboard clipboard) {
+    public TextEditor() {
         this.data = new StringBuilder();
         this.selectedText = "";
-        this.clipboard = clipboard;
     }
     public void write(String text) {
         data.append(text);
     }
-
+    public String getData() {
+        return data.toString();
+    }
     public void paste(String text) {
         data.append(text);
-    }
-
-    public void copy() {
-        clipboard.setData(selectedText);
     }
 
     public void selectText(int si,int ei) {
@@ -70,9 +68,6 @@ class TextEditor { // Receiver
             data.length() - length,
             data.length()
         );
-    }
-    public void printContent(){
-        System.out.println("total text : " +data+ " select content : "+selectedText+ " copied content : "+clipboard.getData() );
     }
 }
 
@@ -130,12 +125,14 @@ class PasteCommand implements Command {
 
 class CopyCommand implements Command {
     TextEditor textEditor;
-    public CopyCommand(TextEditor textEditor) {
+    Clipboard clipboard;
+    public CopyCommand(TextEditor textEditor, Clipboard clipboard) {
         this.textEditor = textEditor;
+        this.clipboard = clipboard;
     }
     
     public void execute() {
-        textEditor.copy();
+        clipboard.setData(textEditor.getSelectedText());
     }
     
     public void undo() {
