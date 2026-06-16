@@ -1,5 +1,25 @@
 package behaviourdesignpattern;
+/*
+when should we use strategy design pattern?
+1. when you have multiple algorithms for a specific task and you want to switch between them dynamically.
+2. when you want to avoid using conditional statements for selecting different algorithms.
+Real-world examples
+Payment methods
+Sorting algorithms
+Compression algorithms
+Authentication providers
 
+Think:
+
+"I want to choose HOW something is done."
+*/
+public class StrategyDemo {  
+    public static void main(String args[]) {
+        PaymentStrategy ccp = new CreditCardPayment();
+        PaymentProcessor paymentProcessor = new PaymentProcessor(ccp);
+        paymentProcessor.processPayment();
+    }
+}
 class PaymentProcessor {
     /*
      * if(credit){
@@ -47,13 +67,5 @@ class DebitCardPayment implements PaymentStrategy {
 class CashPayment implements PaymentStrategy {
     public void pay() {
         System.out.println("cash payment processing");
-    }
-}
-
-public class Main {
-    public static void main(String args[]) {
-        PaymentStrategy ccp = new CreditCardPayment();
-        PaymentProcessor paymentProcessor = new PaymentProcessor(ccp);
-        paymentProcessor.processPayment();
     }
 }

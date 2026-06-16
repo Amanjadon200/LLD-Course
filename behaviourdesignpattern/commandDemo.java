@@ -1,7 +1,17 @@
 package behaviourdesignpattern;
 
 import java.util.Stack;
-
+/*
+when should we use command design pattern?
+1. when you want to decouple the sender and receiver of a request.
+2. when you want to implement undo/redo functionality.
+3. when you want to implement a queue of requests.
+4. when you want to implement logging of requests.
+    logging of requests means that you want to keep a record of all the commands that have been executed. This can be useful for debugging purposes or for auditing purposes. You can log the command name, the parameters passed to the command, and the result of the command execution.
+5. when you want to implement transactions.
+    transactions means that you want to execute a set of commands and if any command fails then you want to undo all the previous commands. This can be useful for ensuring data integrity and consistency. For example, if you are transferring money from one account to another, you want to ensure that both the debit and credit operations are successful. If the debit operation fails, you want to undo the credit operation as well.
+6 remote controls, GUI buttons, menu items, etc. can be implemented using command design pattern. The command design pattern allows you to encapsulate a request as an object, thereby allowing you to parameterize clients with different requests, queue or log requests, and support undoable operations.
+*/
 interface Command {
     void execute();
 
