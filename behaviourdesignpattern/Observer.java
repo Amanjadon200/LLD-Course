@@ -24,11 +24,12 @@ interface YoutubeChannel {
 }
 
 class YoutubeChannelImp implements YoutubeChannel {
-    private List<Subscriber> subscribers = new ArrayList<>();
+    private List<Subscriber> subscribers;
     private String channelName;
 
     public YoutubeChannelImp(String channelName) {
         this.channelName = channelName;
+        this.subscribers = new ArrayList<>();
     }
 
     public void uploadVideo(String title) {

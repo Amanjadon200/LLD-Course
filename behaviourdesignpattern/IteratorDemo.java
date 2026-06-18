@@ -2,7 +2,16 @@ package behaviourdesignpattern;
 
 import java.util.ArrayList;
 import java.util.List;
-
+/*
+when should we use iterator design pattern?
+1. when you want to provide a way to access the elements of an aggregate object sequentially without exposing its underlying representation.
+2. when you want to provide a uniform interface for traversing different aggregate structures.
+Real-world examples
+Use it when:
+You need to traverse collections.
+You don't want users to know the internal data structure.
+Different collections should be traversed uniformly.
+*/
 public class IteratorDemo {
     public static void main(String[] args) {
         // ArrayList<Integer> arr = new ArrayList<>();
