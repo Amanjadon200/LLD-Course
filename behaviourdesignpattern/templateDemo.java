@@ -1,6 +1,6 @@
 package behaviourdesignpattern;
 
-public class templateDemo {
+public class TemplateDemo {
     public static void main(String[] args) {
         Employee dev = new Developer("Aman Jadon");
         Employee tester = new Tester("raman jha");

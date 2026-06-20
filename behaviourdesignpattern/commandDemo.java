@@ -17,7 +17,7 @@ interface Command {
 
     void undo();
 }
-public class commandDemo { // client here you will call the commands
+public class CommandDemo { // client here you will call the commands
     public static void main(String[] args) {
         try {
             
