@@ -24,7 +24,7 @@ public class CommandDemo { // client here you will call the commands
             Clipboard clipboard=new Clipboard();
             TextEditor textEditor=new TextEditor();
             Command writeCommand=new WriteCommand(textEditor,"aman jadon");
-            Command writeCommand1=new WriteCommand(textEditor,"is a greatest coder");
+            Command writeCommand1=new WriteCommand(textEditor,"aman jadon is a greatest coder");
             Invoker invoker=new Invoker();
             invoker.executeCommand(writeCommand);
             invoker.executeCommand(writeCommand1);
@@ -46,20 +46,20 @@ public class CommandDemo { // client here you will call the commands
 }
 
 class TextEditor { // Receiver
-    private StringBuilder data;
+    private String data;
     private String selectedText;
     public TextEditor() {
-        this.data = new StringBuilder();
+        this.data = "";
         this.selectedText = "";
     }
     public void write(String text) {
-        data.append(text);
+        data=text;
     }
     public String getData() {
         return data.toString();
     }
     public void paste(String text) {
-        data.append(text);
+        data+=text;
     }
 
     public void selectText(int si,int ei) {
@@ -69,15 +69,8 @@ class TextEditor { // Receiver
     public String getSelectedText() {
         return selectedText;
     }
-    public void removeLast(int length){
-         if (length > data.length()) {
-            length = data.length();
-        }
-
-        data.delete(
-            data.length() - length,
-            data.length()
-        );
+    public String  snapShot(){
+        return data.toString();
     }
 }
 
@@ -98,18 +91,20 @@ class Invoker {
 class WriteCommand implements Command {
     TextEditor textEditor;
     String text;
-
+    String backup;
     public WriteCommand(TextEditor textEditor, String text) {
         this.textEditor = textEditor;
         this.text = text;
     }
 
     public void execute() {
+        String snapshot=textEditor.snapShot();
+        backup=snapshot;
         textEditor.write(text);
     }
 
     public void undo() {
-        textEditor.removeLast(this.text.length());
+        textEditor.write(this.backup);
     }
 }
 
@@ -117,18 +112,21 @@ class PasteCommand implements Command {
     TextEditor textEditor;
     String pastedText;
     Clipboard clipboard;
+    String backup;
     public PasteCommand(TextEditor textEditor, Clipboard clipboard) {
         this.textEditor = textEditor;
         this.clipboard = clipboard;
     }
 
     public void execute() {
+        String snapshot=textEditor.snapShot();
+        backup=snapshot;
         pastedText=clipboard.getData();
         textEditor.paste(pastedText);
     }
 
     public void undo() {
-        textEditor.removeLast(pastedText.length());
+        textEditor.write(backup);
     }
 }
 
