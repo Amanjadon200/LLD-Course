@@ -1,6 +1,7 @@
 package behaviourdesignpattern;
 
 import java.util.Stack;
+
 /*
 when should we use command design pattern?
 1. when you want to decouple the sender and receiver of a request.
@@ -17,25 +18,27 @@ interface Command {
 
     void undo();
 }
+
 public class CommandDemo { // client here you will call the commands
     public static void main(String[] args) {
         try {
-            
-            Clipboard clipboard=new Clipboard();
-            TextEditor textEditor=new TextEditor();
-            Command writeCommand=new WriteCommand(textEditor,"aman jadon");
-            Command writeCommand1=new WriteCommand(textEditor,"aman jadon is a greatest coder");
-            Invoker invoker=new Invoker();
+
+            Clipboard clipboard = new Clipboard();
+            TextEditor textEditor = new TextEditor();
+            Command writeCommand = new WriteCommand(textEditor, "aman jadon");
+            Command writeCommand1 = new WriteCommand(textEditor, "aman jadon is a greatest coder");
+            Invoker invoker = new Invoker();
             invoker.executeCommand(writeCommand);
             invoker.executeCommand(writeCommand1);
-            Command selectCommand=new SelectTextCommand(textEditor,2,5);
+            Command selectCommand = new SelectTextCommand(textEditor, 2, 5);
             invoker.executeCommand(selectCommand);
-            Command copyCommand=new CopyCommand(textEditor,clipboard);
+            Command copyCommand = new CopyCommand(textEditor, clipboard);
             invoker.executeCommand(copyCommand);
-            Command pasteCommand=new PasteCommand(textEditor,clipboard);
+            Command pasteCommand = new PasteCommand(textEditor, clipboard);
             invoker.executeCommand(pasteCommand);
-                
-        System.out.println("total text : " +textEditor.getData()+ " select content : "+textEditor.getSelectedText()+ " copied content : "+clipboard.getData() );
+            invoker.undoCommand();
+            System.out.println("total text : " + textEditor.getData() + " select content : "
+                    + textEditor.getSelectedText() + " copied content : " + clipboard.getData());
 
         } catch (Exception e) {
             // TODO: handle exception
@@ -48,63 +51,75 @@ public class CommandDemo { // client here you will call the commands
 class TextEditor { // Receiver
     private String data;
     private String selectedText;
+
     public TextEditor() {
         this.data = "";
         this.selectedText = "";
     }
+
     public void write(String text) {
-        data=text;
+        data = text;
     }
+
     public String getData() {
         return data.toString();
     }
-    public void paste(String text) {
-        data+=text;
+
+    public void restore(TextEditorMemento memento) {
+        data = memento.getText();
     }
 
-    public void selectText(int si,int ei) {
-        this.selectedText= data.substring(si,ei+1);
+    public void paste(String text) {
+        data += text;
+    }
+
+    public void selectText(int si, int ei) {
+        this.selectedText = data.substring(si, ei + 1);
     }
 
     public String getSelectedText() {
         return selectedText;
     }
-    public String  snapShot(){
-        return data.toString();
+
+    public TextEditorMemento snapShot() {
+        TextEditorMemento memento = new TextEditorMemento(data);
+        return memento;
     }
 }
 
 class Invoker {
-    Stack<Command> historyCommands=new Stack<>();
-    public void executeCommand(Command command){
+    Stack<Command> historyCommands = new Stack<>();
+
+    public void executeCommand(Command command) {
         command.execute();
         // if()
         historyCommands.push(command);
     }
-    public void undoCommand(){
-        Command command=historyCommands.pop();
+
+    public void undoCommand() {
+        Command command = historyCommands.pop();
         command.undo();
     }
 }
 
-
 class WriteCommand implements Command {
     TextEditor textEditor;
     String text;
-    String backup;
+    TextEditorMemento backup;
+
     public WriteCommand(TextEditor textEditor, String text) {
         this.textEditor = textEditor;
         this.text = text;
     }
 
     public void execute() {
-        String snapshot=textEditor.snapShot();
-        backup=snapshot;
+        TextEditorMemento snapshot = textEditor.snapShot();
+        backup = snapshot;
         textEditor.write(text);
     }
 
     public void undo() {
-        textEditor.write(this.backup);
+        textEditor.restore(this.backup);
     }
 }
 
@@ -112,42 +127,44 @@ class PasteCommand implements Command {
     TextEditor textEditor;
     String pastedText;
     Clipboard clipboard;
-    String backup;
+    TextEditorMemento backup;
+
     public PasteCommand(TextEditor textEditor, Clipboard clipboard) {
         this.textEditor = textEditor;
         this.clipboard = clipboard;
     }
 
     public void execute() {
-        String snapshot=textEditor.snapShot();
-        backup=snapshot;
-        pastedText=clipboard.getData();
+        TextEditorMemento snapshot = textEditor.snapShot();
+        backup = snapshot;
+        pastedText = clipboard.getData();
         textEditor.paste(pastedText);
     }
 
     public void undo() {
-        textEditor.write(backup);
+        textEditor.restore(this.backup);
     }
 }
-
 
 class CopyCommand implements Command {
     TextEditor textEditor;
     Clipboard clipboard;
+
     public CopyCommand(TextEditor textEditor, Clipboard clipboard) {
         this.textEditor = textEditor;
         this.clipboard = clipboard;
     }
-    
+
     public void execute() {
         clipboard.setData(textEditor.getSelectedText());
     }
-    
+
     public void undo() {
         // textEditor.undo();
         throw new Error("can't undo for copy");
     }
 }
+
 class SelectTextCommand implements Command {
 
     private TextEditor editor;
@@ -171,12 +188,27 @@ class SelectTextCommand implements Command {
         throw new Error("can't undo for select");
     }
 }
-class Clipboard{
+
+class Clipboard {
     private String data;
-    public String getData(){
+
+    public String getData() {
         return data;
     }
-    public void setData(String data){
-        this.data=data;
+
+    public void setData(String data) {
+        this.data = data;
+    }
+}
+
+class TextEditorMemento {
+    private final String text;
+
+    public TextEditorMemento(String text) {
+        this.text = text;
+    }
+
+    public String getText() {
+        return text;
     }
 }
