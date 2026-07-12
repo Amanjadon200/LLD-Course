@@ -4,18 +4,18 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 /*requirement
-1.  is it a 3*3 board
+1.  is it a 3*3 board is should be square matrix of any size
 2.  two players?? 
 3 win or lose or draw
 4. alternating turn for players
-5. validation rules to maintain nobdsy is putting on already filled cell.
+5. validation rules to maintain no bias is putting on already filled cell.
 
 */
 /* key components
-symbol : X or O
+symbol : X or O or EMPTY 
 Board,
 player
-Tictactoe
+TictackToeGame
 */
 public class TictackToeGameMain {
     public static void main(String[] args) {
@@ -36,6 +36,9 @@ enum Symbol {
     X, O, EMPTY
 }
 
+interface BoardGames {
+    void play();// abstract and public
+}
 class TictackToeGame implements BoardGames {
     private Board board;
     private PlayerStrategy p1;
@@ -73,9 +76,6 @@ class TictackToeGame implements BoardGames {
 
 }
 
-interface BoardGames {
-    void play();// abstract and public
-}
 
 class Board {
     private int row;
