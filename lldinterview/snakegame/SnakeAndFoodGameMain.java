@@ -1,10 +1,10 @@
 package lldinterview.snakegame;
-
-import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Scanner;
 
 /*
@@ -30,11 +30,11 @@ public class SnakeAndFoodGameMain {
                 { 12, 3 } // Fifth food
         };
         HashMap<Integer, FoodItem> foodMap = new HashMap<>();
-        FoodItem f1 = new NormalFood(4, 5);
-        FoodItem f2 = new BonusFood(2, 5);
-        FoodItem f3 = new NormalFood(1, 8);
-        FoodItem f4 = new BonusFood(3, 0);
-        FoodItem f5 = new NormalFood(6, 7);
+        FoodItem f1= FoodFactory.createFood(4, 5, 1);
+        FoodItem f2= FoodFactory.createFood(10, 8, 5);
+        FoodItem f3= FoodFactory.createFood(3, 12, 1);
+        FoodItem f4= FoodFactory.createFood(8, 17, 5);
+        FoodItem f5= FoodFactory.createFood(12, 3, 1);
         foodMap.put(0, f1);
         foodMap.put(1, f2);
         foodMap.put(2, f3);
@@ -51,9 +51,9 @@ class SnakeGame {
     private Board board;
     int[][] foodPos;
     int score;
-    HashMap<Integer, FoodItem> foodMap;
+    Map<Integer, FoodItem> foodMap;
 
-    public SnakeGame(int[][] foodPos, HashMap<Integer, FoodItem> foodMap) {
+    public SnakeGame(int[][] foodPos, Map<Integer, FoodItem> foodMap) {
         snake = new Snake();
         movementStrategy = new HumanMovementStrategy();
         board = new Board(20, 20);
@@ -62,6 +62,7 @@ class SnakeGame {
         this.foodMap = foodMap;
     }
 
+    final Random random = new Random();
     public void startGame() {
         Scanner sc = new Scanner(System.in);
         while (true) {
@@ -77,20 +78,20 @@ class SnakeGame {
     }
 
     public int move(String direction) {
-        Pair head = snake.body.peekFirst();
+        Deque<Pair> snakeBody = snake.getBody();
+        Pair head = snakeBody.peekFirst();
         Pair newPostion = movementStrategy.makeMove(head, direction);
         // int newHeadRow = newPostion.getRow();
         // int newHeadCol = newPostion.getCol();
-        if (!board.validMove(newPostion, snake)) {
-            System.out.println(score);
-            return -1;
-        }
         boolean food = false;
-        
         for (int i = 0; i < foodPos.length; i++) {
             if (foodPos[i][0] == newPostion.getRow() && foodPos[i][1] == newPostion.getCol()) {
-                int randomRow = 2;
-                int randomCol = 3;
+                int randomRow = random.nextInt(board.getRow());
+                int randomCol = random.nextInt(board.getCol());
+                while (snake.getSnakePosMap().containsKey(new Pair(randomRow, randomCol))) {
+                    randomRow = random.nextInt(board.getRow());
+                    randomCol = random.nextInt(board.getCol());
+                }
                 foodPos[i][0] = randomRow;
                 foodPos[i][1] = randomCol;
                 food = true;
@@ -99,18 +100,24 @@ class SnakeGame {
             }
         }
         if (food == false) {
-            Pair lastPos = snake.body.removeLast();
-            snake.snakePosMap.remove(lastPos);
+            Pair lastPos = snakeBody.removeLast();
+            HashMap<Pair, Boolean> snakePosMap = snake.getSnakePosMap();
+            snakePosMap.remove(lastPos);
         }
-        snake.body.addFirst(newPostion);
-        snake.snakePosMap.put(newPostion, true);
+        if (!board.validMove(newPostion, snake)) {
+            System.out.println(score);
+            return -1;
+        }
+        snakeBody.addFirst(newPostion);
+        HashMap<Pair, Boolean> snakePosMap = snake.getSnakePosMap();
+        snakePosMap.put(newPostion, true);
         return score;
     }
 }
 
 class Snake {
-    Deque<Pair> body;
-    HashMap<Pair, Boolean> snakePosMap;
+    private Deque<Pair> body;
+    private HashMap<Pair, Boolean> snakePosMap;
 
     public Snake() {
         this.body = new LinkedList<>();
@@ -118,6 +125,12 @@ class Snake {
         Pair initialPos = new Pair(0, 0);
         this.snakePosMap.put(initialPos, true);
         this.body.add(initialPos);
+    }
+    public Deque<Pair> getBody() {
+        return body;
+    }
+    public HashMap<Pair, Boolean> getSnakePosMap() {
+        return snakePosMap;
     }
 }
 
@@ -182,8 +195,9 @@ class Board {
     public boolean validMove(Pair newPosition, Snake snake) {
         int row = newPosition.getRow();
         int col = newPosition.getCol();
+        HashMap<Pair, Boolean> snakePosMap = snake.getSnakePosMap();
         if (row < 0 || col < 0 || row >= this.getRow() || col >= this.getCol()
-                || snake.snakePosMap.containsKey(newPosition) == true)
+                || snakePosMap.containsKey(newPosition) == true)
             return false;
         return true;
     }
