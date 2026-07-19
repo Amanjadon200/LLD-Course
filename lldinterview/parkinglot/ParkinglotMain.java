@@ -79,7 +79,7 @@ class ParkingLot {
     public ParkingSlot findParkingSlot(Vehicle vehicle) {
         for (ParkingSlot slot : parkingSlot) {
             if (slot.getSlotType() == vehicle.getVehicleType()) {
-                if (slot.getSize().equals(vehicle.getSize()) && !slot.isOccupied()) {
+                if (slot.getSize() == vehicle.getSize() && !slot.isOccupied()) {
                     return slot;
                 }
             }
@@ -118,10 +118,22 @@ class ParkingSlot {
         return slotType;
     }
 }
-
+// The compiler roughly converts
 enum VehicleType {
     Car, Bike
 }
+// final class VehicleType {
+
+//     public static final VehicleType Car =
+//             new VehicleType("Car");
+
+//     public static final VehicleType Bike =
+//             new VehicleType("Bike");
+
+//     private VehicleType(String name) {}
+
+// }
+// Enum constants are singleton instances created once by the JVM. Each constant like VehicleType.Car is a public static final object. Since there's only one instance of each constant, comparing references with == is correct, faster, and null-safe
 enum Size{
     Small, Medium, Large
 }
@@ -159,7 +171,7 @@ interface Plan {
 
 class BasicParkingPlan implements Plan {
     public int planPrice(VehicleType vehicleType, int duration) {
-        if (vehicleType.equals(vehicleType.Car)) {
+        if (vehicleType==VehicleType.Car) {
             if (duration < 30) {
                 return 5; // per minute
             } else if (duration >= 30 && duration <= 300) {
@@ -167,7 +179,7 @@ class BasicParkingPlan implements Plan {
             } else {
                 return -1;
             }
-        } else if (vehicleType.equals(vehicleType.Bike)) {
+        } else if (vehicleType==VehicleType.Bike) {
             if (duration < 30) {
                 return 2;// per minute
             } else if (duration >= 30 && duration <= 300) {
@@ -183,7 +195,7 @@ class BasicParkingPlan implements Plan {
 
 class PremiumParkingPlan implements Plan {
     public int planPrice(VehicleType vehicleType, int duration) {
-        if (vehicleType.equals(vehicleType.Car)) {
+        if (vehicleType==VehicleType.Car) {
             if (duration < 30) {
                 return 150;
             } else if (duration >= 30 && duration <= 300) {
@@ -191,7 +203,7 @@ class PremiumParkingPlan implements Plan {
             } else {
                 return -1;
             }
-        } else if (vehicleType.equals(vehicleType.Bike)) {
+        } else if (vehicleType==VehicleType.Bike) {
             if (duration < 30) {
                 return 50;
             } else if (duration >= 30 && duration <= 300) {
