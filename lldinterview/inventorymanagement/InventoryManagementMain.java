@@ -1,6 +1,6 @@
 package lldinterview.inventorymanagement;
 
-import java.lang.module.ModuleDescriptor.Builder;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,24 +8,37 @@ import java.util.Random;
 
 public class InventoryManagementMain {
     public static void main(String[] args) {
-        
-        ProductFactory productFactory=new ProductFactory();
-        Product product1=productFactory.create("sku1", "milk", 10.0, ProductCategory.GROCERY);
-        Product product2=productFactory.create("sku2", "bread", 5.0, ProductCategory.GROCERY);
-        
-        WareHouse wareHouse1=new WareHouse(1);
-        WareHouse wareHouse2=new WareHouse(2);
-        InventoryManager inventoryManager=new InventoryManager(List.of(wareHouse1, wareHouse2), "inventory manager", new RandomWareHouseSelectionStrategy());
-        inventoryManager.addInventory(product1, 5, 3);
-        inventoryManager.addInventory(product2, 10, 5);
-        inventoryManager.addInventory(product1, 2, 3);
-        System.out.println("Inventory items in warehouse 1: " + wareHouse1.fetchAllInventoryItems());
-        System.out.println("Inventory items in warehouse 2: " + wareHouse2.fetchAllInventoryItems());
-        // inventoryManager.removeInventory(inventoryItem1);
-        System.out.println("Inventory items in warehouse 1 after removal: " + wareHouse1.fetchAllInventoryItems());
-        System.out.println("Inventory items in warehouse 2 after removal: " + wareHouse2.fetchAllInventoryItems());
+
+        ProductFactory productFactory = new ProductFactory();
+        Product product1 = productFactory.create("sku1", "milk", 10.0, ProductCategory.GROCERY);
+        Product product2 = productFactory.create("sku2", "bread", 5.0, ProductCategory.GROCERY);
+
+        WareHouse wareHouse1 = new WareHouse(1);
+        WareHouse wareHouse2 = new WareHouse(2);
+        Map<Integer, WareHouse> wareHouses = new HashMap<>();
+        wareHouses.put(wareHouse1.getId(), wareHouse1);
+        wareHouses.put(wareHouse2.getId(), wareHouse2);
+
+        InventoryManager inventoryManager = new InventoryManager(wareHouses, "inventory manager",
+                new RandomWareHouseSelectionStrategy());
+        int warehouseid1 = inventoryManager.addInventory(1, product1, 5, 3);
+        int warehouseid2 = inventoryManager.addInventory(2, product2, 10, 5);
+        int warehouseid3 = inventoryManager.addInventory(2, product1, 2, 3);
+        System.out.println(
+                "Inventory items in warehouse " + warehouseid1 + ": " + wareHouse1.fetchAllInventoryItems());
+        System.out.println(
+                "Inventory items in warehouse " + warehouseid2 + ": " + wareHouse2.fetchAllInventoryItems());
+
+        inventoryManager.removeInventory("sku1", 5, wareHouse1);
+        System.out.println(
+                "Inventory items in warehouse " + warehouseid1 + ": " + wareHouse1.fetchAllInventoryItems());
+        System.out.println(
+                "Inventory items in warehouse " + warehouseid2 + ": " + wareHouse2.fetchAllInventoryItems());
+        // System.out.println("Inventory items in warehouse " + warehouseid3 + "
+        // after removal: " + wareHouse3.fetchAllInventoryItems());
     }
 }
+
 /*
  * Requirements:
  * 1: system can manage different different types of product .
@@ -49,21 +62,26 @@ abstract class Product {
     private String name;
     private double price;
     private ProductCategory category;
+
     public Product(String sku, String name, double price, ProductCategory category) {
-            this.sku = sku;
-            this.name = name;
-            this.price = price;
-            this.category = category;
+        this.sku = sku;
+        this.name = name;
+        this.price = price;
+        this.category = category;
     }
+
     public String getSku() {
         return sku;
     }
+
     public String getName() {
         return name;
     }
+
     public double getPrice() {
         return price;
     }
+
     public ProductCategory getCategory() {
         return category;
     }
@@ -83,31 +101,41 @@ class WareHouse {
     }
 
     public void add(InventoryItem inventoryItem) {
-        if(inventoryItems.containsKey(inventoryItem.getProduct().getSku())){
+        if (inventoryItems.containsKey(inventoryItem.getProduct().getSku())) {
             InventoryItem existingItem = inventoryItems.get(inventoryItem.getProduct().getSku());
             existingItem.setQuantity(existingItem.getQuantity() + inventoryItem.getQuantity());
         } else {
             inventoryItems.put(inventoryItem.getProduct().getSku(), inventoryItem);
         }
+        System.out.println("Added " + inventoryItem.getQuantity() + " of " + inventoryItem.getProduct().getName()
+                + " to warehouse " + id);
     }
 
-    public void remove(InventoryItem inventoryItem) {
-        if (inventoryItems.containsKey(inventoryItem.getProduct().getSku())) {
-            InventoryItem existingItem = inventoryItems.get(inventoryItem.getProduct().getSku());
-            int newQuantity = existingItem.getQuantity() - inventoryItem.getQuantity();
+    public void remove(String sku, int quantity) {
+        if (inventoryItems.containsKey(sku)) {
+            InventoryItem existingItem = inventoryItems.get(sku);
+            int newQuantity = existingItem.getQuantity() - quantity;
             if (newQuantity <= 0) {
-                inventoryItems.remove(inventoryItem.getProduct().getSku());
+                inventoryItems.remove(sku);
             } else {
                 existingItem.setQuantity(newQuantity);
             }
         }
+        System.out.println("Removed " + quantity + " of " + sku + " from warehouse " + id);
+        System.out.println(inventoryItems);
     }
-    public List<String> fetchAllInventoryItems(){
-        // return 
+
+    public int getId() {
+        return id;
+    }
+
+    public List<String> fetchAllInventoryItems() {
+        // return
         return List.copyOf(inventoryItems.keySet());
     }
 }
-class InventoryItem{
+
+class InventoryItem {
     private Product product;
     private int quantity;
     private int threshold;
@@ -134,87 +162,111 @@ class InventoryItem{
         return threshold;
     }
 }
+
 class InventoryManager {
-    List<WareHouse> wareHouses;
+    Map<Integer, WareHouse> wareHouses;
     String name;
     WareHouseSelectionStrategy wareHouseSelectionStrategy;
-    Random random=new Random();
-    public InventoryManager(List<WareHouse> wareHouses, String name, WareHouseSelectionStrategy wareHouseSelectionStrategy) {
+    Random random = new Random();
+
+    public InventoryManager(Map<Integer, WareHouse> wareHouses, String name,
+            WareHouseSelectionStrategy wareHouseSelectionStrategy) {
         this.name = name;
         this.wareHouses = wareHouses;
         this.wareHouseSelectionStrategy = wareHouseSelectionStrategy;
     }
-    public void addInventory(Product product, int quantity, int threshold){
-        InventoryItem inventoryItem=new InventoryItem(product, quantity, threshold);
-        WareHouse warehouse=wareHouseSelectionStrategy.selectWareHouse(wareHouses);
-        warehouse.add(inventoryItem);
-    }
-    public void removeInventory(InventoryItem inventoryItem){
-        WareHouse warehouse=findWareHouse(inventoryItem);
-        if(warehouse!=null){
-            warehouse.remove(inventoryItem);
-            if(inventoryItem.getQuantity()<3){
-                // fire an alert 
-            }
+
+    public int addInventory(int warehouseId, Product product, int quantity, int threshold) {
+        InventoryItem inventoryItem = new InventoryItem(product, quantity, threshold);
+        WareHouse warehouse = wareHouses.get(warehouseId);
+        if (warehouse != null) {
+            warehouse.add(inventoryItem);
         }
+        return warehouse.getId();
     }
-    public WareHouse findWareHouse(InventoryItem inventoryItem){
-        for (WareHouse wareHouse : wareHouses) {
-            for(String sku: wareHouse.fetchAllInventoryItems()){
-                if(sku.equals(inventoryItem.getProduct().getSku()))return wareHouse;
+
+    public void removeInventory(String sku, int quantity, WareHouse warehouse) {
+
+        if (warehouse != null) {
+            warehouse.remove(sku, quantity);
+        }
+
+    }
+
+    // public void removeInventory(InventoryItem inventoryItem){
+    // WareHouse warehouse=findWareHouse(inventoryItem);
+    // if(warehouse!=null){
+    // warehouse.remove(inventoryItem);
+    // if(inventoryItem.getQuantity()<3){
+    // // fire an alert
+    // }
+    // }
+    // }
+    public WareHouse findWareHouse(InventoryItem inventoryItem) {
+        for (WareHouse wareHouse : wareHouses.values()) {
+            for (String sku : wareHouse.fetchAllInventoryItems()) {
+                if (sku.equals(inventoryItem.getProduct().getSku()))
+                    return wareHouse;
             }
         }
         return null;
     }
-    public WareHouse matchWarehouseToPlace(){
-        int warehouse=random.nextInt(wareHouses.size());
+
+    public WareHouse matchWarehouseToPlace() {
+        int warehouse = random.nextInt(wareHouses.size());
         return wareHouses.get(warehouse);
     }
 }
-class GroceryProduct extends Product{
+
+class GroceryProduct extends Product {
     public GroceryProduct(String sku, String name, double price, ProductCategory category) {
         super(sku, name, price, category);
     }
 
 }
 
-class ProductFactory{
-    public Product create(String sku,String name,double price,ProductCategory category){
+class ProductFactory {
+    public Product create(String sku, String name, double price, ProductCategory category) {
         switch (category) {
             case GROCERY:
                 return new GroceryProduct(sku, name, price, category);
-                // return pb;
+            // return pb;
             // case ProductCategory.ELECTRONICS:
-            //     // return new ElectronicsProduct(sku, name, price, quantity, threshold);
-            //     return new ElectronicsProduct.ElectronicsProductBuilder().setSku(sku)
-            //             .setName(name)
-            //             .setPrice(price)
-            //             .setQuantity(quantity)
-            //             .setThreshold(threshold)
-            //             .build();
+            // // return new ElectronicsProduct(sku, name, price, quantity, threshold);
+            // return new ElectronicsProduct.ElectronicsProductBuilder().setSku(sku)
+            // .setName(name)
+            // .setPrice(price)
+            // .setQuantity(quantity)
+            // .setThreshold(threshold)
+            // .build();
             default:
                 throw new IllegalArgumentException("Invalid product category: " + category);
         }
-    
+
     }
 }
-interface ReplishmentStrategy{
+
+interface ReplishmentStrategy {
     void replish();
 }
-class JustInTimeReplishmentStrategy implements ReplishmentStrategy{
+
+class JustInTimeReplishmentStrategy implements ReplishmentStrategy {
     @Override
     public void replish() {
         // implement just in time replishment logic
     }
 }
-interface WareHouseSelectionStrategy{
+
+interface WareHouseSelectionStrategy {
     WareHouse selectWareHouse(List<WareHouse> wareHouses);
 }
-class RandomWareHouseSelectionStrategy implements WareHouseSelectionStrategy{
-    private Random random=new Random();
+
+class RandomWareHouseSelectionStrategy implements WareHouseSelectionStrategy {
+    private Random random = new Random();
+
     @Override
     public WareHouse selectWareHouse(List<WareHouse> wareHouses) {
-        int warehouse=random.nextInt(wareHouses.size());
+        int warehouse = random.nextInt(wareHouses.size());
         return wareHouses.get(warehouse);
     }
 }

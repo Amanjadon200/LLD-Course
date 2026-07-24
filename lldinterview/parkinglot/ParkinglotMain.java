@@ -57,9 +57,9 @@ public class ParkinglotMain {
 class ParkingSlotFactory {
     public static ParkingSlot createFactory(Size size, VehicleType slotType) {
         switch (slotType) {
-            case VehicleType.Car:
+            case Car:
                 return new ParkingSlot(size, VehicleType.Car, false);
-            case VehicleType.Bike:
+            case Bike:
                 return new ParkingSlot(size, VehicleType.Bike, false);
             default:
                 return null;
