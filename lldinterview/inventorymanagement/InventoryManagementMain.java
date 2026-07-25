@@ -8,7 +8,8 @@ import java.util.Random;
 
 public class InventoryManagementMain {
     public static void main(String[] args) {
-
+try {
+            // Create products
         ProductFactory productFactory = new ProductFactory();
         Product product1 = productFactory.create("sku1", "milk", 10.0, ProductCategory.GROCERY);
         Product product2 = productFactory.create("sku2", "bread", 5.0, ProductCategory.GROCERY);
@@ -20,7 +21,7 @@ public class InventoryManagementMain {
         wareHouses.put(wareHouse2.getId(), wareHouse2);
 
         InventoryManager inventoryManager = new InventoryManager(wareHouses, "inventory manager",
-                new RandomWareHouseSelectionStrategy());
+                List.of(new SmsInventoryFireAlertObserver(), new EmailInventoryFireAlertObserver()));
         int warehouseid1 = inventoryManager.addInventory(1, product1, 5, 3);
         int warehouseid2 = inventoryManager.addInventory(2, product2, 10, 5);
         int warehouseid3 = inventoryManager.addInventory(2, product1, 2, 3);
@@ -28,7 +29,7 @@ public class InventoryManagementMain {
                 "Inventory items in warehouse " + warehouseid1 + ": " + wareHouse1.fetchAllInventoryItems());
         System.out.println(
                 "Inventory items in warehouse " + warehouseid2 + ": " + wareHouse2.fetchAllInventoryItems());
-
+            
         inventoryManager.removeInventory("sku1", 5, wareHouse1);
         System.out.println(
                 "Inventory items in warehouse " + warehouseid1 + ": " + wareHouse1.fetchAllInventoryItems());
@@ -36,6 +37,10 @@ public class InventoryManagementMain {
                 "Inventory items in warehouse " + warehouseid2 + ": " + wareHouse2.fetchAllInventoryItems());
         // System.out.println("Inventory items in warehouse " + warehouseid3 + "
         // after removal: " + wareHouse3.fetchAllInventoryItems());
+        
+        } catch (Exception e) {
+            System.out.println("Error: " + e.getMessage());
+        }
     }
 }
 
@@ -103,7 +108,7 @@ class WareHouse {
     public void add(InventoryItem inventoryItem) {
         if (inventoryItems.containsKey(inventoryItem.getProduct().getSku())) {
             InventoryItem existingItem = inventoryItems.get(inventoryItem.getProduct().getSku());
-            existingItem.setQuantity(existingItem.getQuantity() + inventoryItem.getQuantity());
+            existingItem.increaseQuantity(inventoryItem.getQuantity());
         } else {
             inventoryItems.put(inventoryItem.getProduct().getSku(), inventoryItem);
         }
@@ -111,18 +116,21 @@ class WareHouse {
                 + " to warehouse " + id);
     }
 
-    public void remove(String sku, int quantity) {
+    public InventoryItem remove(String sku, int quantity) {
         if (inventoryItems.containsKey(sku)) {
             InventoryItem existingItem = inventoryItems.get(sku);
             int newQuantity = existingItem.getQuantity() - quantity;
             if (newQuantity <= 0) {
                 inventoryItems.remove(sku);
+                return null;
             } else {
-                existingItem.setQuantity(newQuantity);
+                existingItem.decreaseQuantity(quantity);
+                return existingItem;
             }
         }
         System.out.println("Removed " + quantity + " of " + sku + " from warehouse " + id);
         System.out.println(inventoryItems);
+        throw new IllegalArgumentException("Product with SKU " + sku + " not found in warehouse " + id);
     }
 
     public int getId() {
@@ -154,8 +162,12 @@ class InventoryItem {
         return quantity;
     }
 
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
+    public void increaseQuantity(int quantity) {
+        this.quantity += quantity;
+    }
+
+    public void decreaseQuantity(int quantity) {
+        this.quantity -= quantity;
     }
 
     public int getThreshold() {
@@ -166,14 +178,14 @@ class InventoryItem {
 class InventoryManager {
     Map<Integer, WareHouse> wareHouses;
     String name;
-    WareHouseSelectionStrategy wareHouseSelectionStrategy;
     Random random = new Random();
+    List<InventoryFireAlertObserver> observers;
 
     public InventoryManager(Map<Integer, WareHouse> wareHouses, String name,
-            WareHouseSelectionStrategy wareHouseSelectionStrategy) {
+            List<InventoryFireAlertObserver> observers) {
         this.name = name;
         this.wareHouses = wareHouses;
-        this.wareHouseSelectionStrategy = wareHouseSelectionStrategy;
+        this.observers = observers;
     }
 
     public int addInventory(int warehouseId, Product product, int quantity, int threshold) {
@@ -186,35 +198,16 @@ class InventoryManager {
     }
 
     public void removeInventory(String sku, int quantity, WareHouse warehouse) {
+        
+            if (warehouse != null) {
+                InventoryItem remainingItem = warehouse.remove(sku, quantity);
+                if (remainingItem != null && remainingItem.getQuantity() < remainingItem.getThreshold()) {
+                    for (InventoryFireAlertObserver observer : observers) {
+                        observer.notify(remainingItem);
+                    }
+                }
 
-        if (warehouse != null) {
-            warehouse.remove(sku, quantity);
-        }
-
-    }
-
-    // public void removeInventory(InventoryItem inventoryItem){
-    // WareHouse warehouse=findWareHouse(inventoryItem);
-    // if(warehouse!=null){
-    // warehouse.remove(inventoryItem);
-    // if(inventoryItem.getQuantity()<3){
-    // // fire an alert
-    // }
-    // }
-    // }
-    public WareHouse findWareHouse(InventoryItem inventoryItem) {
-        for (WareHouse wareHouse : wareHouses.values()) {
-            for (String sku : wareHouse.fetchAllInventoryItems()) {
-                if (sku.equals(inventoryItem.getProduct().getSku()))
-                    return wareHouse;
             }
-        }
-        return null;
-    }
-
-    public WareHouse matchWarehouseToPlace() {
-        int warehouse = random.nextInt(wareHouses.size());
-        return wareHouses.get(warehouse);
     }
 }
 
@@ -268,5 +261,29 @@ class RandomWareHouseSelectionStrategy implements WareHouseSelectionStrategy {
     public WareHouse selectWareHouse(List<WareHouse> wareHouses) {
         int warehouse = random.nextInt(wareHouses.size());
         return wareHouses.get(warehouse);
+    }
+}
+
+interface InventoryFireAlertObserver {
+    void notify(InventoryItem inventoryItem);
+}
+
+class SmsInventoryFireAlertObserver implements InventoryFireAlertObserver {
+    @Override
+    public void notify(InventoryItem inventoryItem) {
+        // send SMS alert for low inventory
+        System.out.println("SMS Alert: Inventory for product " + inventoryItem.getProduct().getName()
+                + " is below threshold. Current quantity: " + inventoryItem.getQuantity() + ", Threshold: "
+                + inventoryItem.getThreshold());
+    }
+}
+
+class EmailInventoryFireAlertObserver implements InventoryFireAlertObserver {
+    @Override
+    public void notify(InventoryItem inventoryItem) {
+        // send email alert for low inventory
+        System.out.println("Email Alert: Inventory for product " + inventoryItem.getProduct().getName()
+                + " is below threshold. Current quantity: " + inventoryItem.getQuantity() + ", Threshold: "
+                + inventoryItem.getThreshold());
     }
 }
