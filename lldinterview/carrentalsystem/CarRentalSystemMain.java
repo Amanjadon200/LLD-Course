@@ -181,8 +181,14 @@ class BookingManager {
         this.booking = new ArrayList<>();
     }
 
-    public void addBooking(String bookingId, Booking booking) {
-        this.booking.add(booking);
+    public Booking addBooking(String registrationNumber, LocalDate startDate, LocalDate endDate, String userId) {
+        Booking booking = new Booking("BK001", registrationNumber, startDate, endDate, BookingStatus.PENDING_PAYMENT, userId);
+        boolean available = checkAvailablity(booking.getRegistrationNumber(), booking.getStartDate(), booking.getEndDate());
+        if (available) {
+            this.booking.add(booking);
+            return booking;
+        }
+        return null;
     }
 
     public boolean checkAvailablity(String registrationNumber, LocalDate startDate, LocalDate endDate) {
@@ -217,8 +223,12 @@ class PaymentProcessor {
         this.paymentStrategy = paymentStrategy;
     }
 
-    public void processPayment(double amount) {
+    public void processPayment(Booking booking, double amount) {
+         if (booking.getBookingStatus()  != BookingStatus.PENDING_PAYMENT) {
+            throw new IllegalStateException("Booking is not in pending payment state");
+        }
         paymentStrategy.pay(amount);
+        booking.setBookingStatus(BookingStatus.CONFIRMED);
     }
 }
 
@@ -237,23 +247,12 @@ class RentalSystem {
         return rentalStore.searchVehicle(city, type);
     }
 
-    public Booking createBooking(String registationNumber, LocalDate startDate, LocalDate endDate, String userId) {
-        boolean available = bookingManager.checkAvailablity(registationNumber, startDate, endDate);
-        if (available) {
-            Booking booking = new Booking("BK001", registationNumber, startDate, endDate,
-                    BookingStatus.PENDING_PAYMENT, userId);
-            bookingManager.addBooking(booking.getBookingId(), booking);
-            return booking;
-        }
-        return null;
+    public Booking createBooking(String registrationNumber, LocalDate startDate, LocalDate endDate, String userId) {
+        return bookingManager.addBooking(registrationNumber, startDate, endDate, userId);
     }
 
     public void processPayment(Booking booking, double amount) {
-        if (booking.getBookingStatus()  != BookingStatus.PENDING_PAYMENT) {
-            throw new IllegalStateException("Booking is not in pending payment state");
-        }
-        paymentProcessor.processPayment(amount);
-        booking.setBookingStatus(BookingStatus.CONFIRMED);
+        paymentProcessor.processPayment(booking,amount);
     }
 
     public void cancelBooking(Booking booking) {
