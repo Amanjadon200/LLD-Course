@@ -24,14 +24,15 @@ public class CarRentalSystemMain {
         RentalSystem rentalSystem = new RentalSystem(rentalStore, paymentProcessor, bookingManager);
 
         // Search for a vehicle
-        Vehicle vehicle = rentalSystem.searchVehicle("New York", VehicleType.ECONOMY);
-        if (vehicle != null) {
+        List<Vehicle> vehicles = rentalSystem.searchVehicle("New York", VehicleType.ECONOMY);
+        if (!vehicles.isEmpty()) {
+            Vehicle vehicle = vehicles.get(0);
             System.out.println("Found vehicle: " + vehicle.getModel() + " with registration number: "
                     + vehicle.getRegistrationNumber());
             // Create a booking for the vehicle
             LocalDate startDate = LocalDate.of(2024, 6, 1);
             LocalDate endDate = LocalDate.of(2024, 6, 5);
-            Booking booking = rentalSystem.createBooking(vehicle.getRegistrationNumber(), startDate, endDate);
+            Booking booking = rentalSystem.createBooking(vehicle.getRegistrationNumber(), startDate, endDate, "user123");
             if (booking != null) {
                 System.out.println("Booking created with ID: " + booking.getBookingId());
                 // Process payment for the booking
@@ -90,7 +91,27 @@ abstract class Vehicle {
         return baseRentalPrice*days;
     }
 }
+class User {
+    private String userId;
+    private String name;
+    private String email;
 
+    public User(String userId, String name, String email) {
+        this.userId = userId;
+        this.name = name;
+        this.email = email;
+    }
+    public String getUserId() {
+        return userId;
+    }
+    public String getName() {
+        return name;
+    }
+    public String getEmail() {
+        return email;
+    }
+    // Getters and setters can be defined here
+}
 class VehicleFactory {
     public static Vehicle createVehicle(VehicleType vehicleType, String registrationNumber, String model,
             double baseRentalPrice) {
@@ -119,14 +140,16 @@ class Booking {
     private LocalDate startDate;
     private LocalDate endDate;
     private BookingStatus bookingStatus;
+    private String userId;
 
     public Booking(String bookingId, String registrationNumber, LocalDate startDate, LocalDate endDate,
-            BookingStatus bookingStatus) {
+            BookingStatus bookingStatus, String userId) {
         this.bookingId = bookingId;
         this.registrationNumber = registrationNumber;
         this.startDate = startDate;
         this.endDate = endDate;
         this.bookingStatus = bookingStatus;
+        this.userId = userId;
     }
     public String getRegistrationNumber() {
         return registrationNumber;
@@ -142,6 +165,9 @@ class Booking {
     }
     public String getBookingId() {
         return bookingId;
+    }
+    public String getUserId() {
+        return userId;
     }
     public void setBookingStatus(BookingStatus bookingStatus) {
         this.bookingStatus = bookingStatus;
@@ -207,15 +233,15 @@ class RentalSystem {
         this.bookingManager = bookingManager;
     }
 
-    public Vehicle searchVehicle(String city, VehicleType type) {
+    public List<Vehicle> searchVehicle(String city, VehicleType type) {
         return rentalStore.searchVehicle(city, type);
     }
 
-    public Booking createBooking(String registationNumber, LocalDate startDate, LocalDate endDate) {
+    public Booking createBooking(String registationNumber, LocalDate startDate, LocalDate endDate, String userId) {
         boolean available = bookingManager.checkAvailablity(registationNumber, startDate, endDate);
         if (available) {
             Booking booking = new Booking("BK001", registationNumber, startDate, endDate,
-                    BookingStatus.PENDING_PAYMENT);
+                    BookingStatus.PENDING_PAYMENT, userId);
             bookingManager.addBooking(booking.getBookingId(), booking);
             return booking;
         }
@@ -257,8 +283,14 @@ class RentalStore {
         vehicleMap.putIfAbsent(vehicle.getRegistrationNumber(), vehicle);
     }
 
-    public Vehicle searchVehicle(String city, VehicleType vehicleType) {
-        return null;
+    public List<Vehicle> searchVehicle(String city, VehicleType vehicleType) {
+        List<Vehicle> availableVehicles = new ArrayList<>();
+        for (Vehicle vehicle : vehicleMap.values()) {
+            if (vehicle.getType() == vehicleType) {
+                availableVehicles.add(vehicle);
+            }
+        }
+        return availableVehicles;
     }
 }
 
