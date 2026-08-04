@@ -21,7 +21,7 @@ public class VendingMachingMain {
         vendingMachine.insertCoin(Coin.ten);
         vendingMachine.insertCoin(Coin.five);
         vendingMachine.selectItem(1);
-        vendingMachine.dispenseItem(1);
+        vendingMachine.dispenseItem();
     }
 }
 // entitites
@@ -73,13 +73,17 @@ class Inventory{
             }
         }
     }
-    public void dispenseItem(int code){
+    public Item dispenseItem(int code){
         for(ItemShelf shelf : itemShelves){
             if(shelf.code == code){
-                shelf.items.remove(0);
-                break;
+                if(shelf.items.size() == 0){
+                    throw new IllegalStateException("Item is sold out");
+                }
+                Item item=shelf.items.remove(0);
+                return item;
             }
         }
+        throw new IllegalArgumentException("Invalid item code");
     }
     public void isSoldOut(int code){
         for(ItemShelf shelf : itemShelves){
@@ -91,6 +95,17 @@ class Inventory{
             }
         }
     }
+    public Item getItem(int code){
+        for(ItemShelf shelf : itemShelves){
+            if(shelf.code == code){
+                if(shelf.items.size() == 0){
+                    throw new IllegalStateException("Item is sold out");
+                }
+                return shelf.items.get(0);
+            }
+        }
+        throw new IllegalArgumentException("Invalid item code");
+    }
 }
 class VendingMachine{
     Inventory inventory;
@@ -100,94 +115,101 @@ class VendingMachine{
     public VendingMachine(Inventory inventory){
         this.inventory = inventory;
         this.currentBalance = 0;
-        this.currentState = new IdleState(this);
+        this.currentState = IdleState.instance;
         this.selectedItemCode = -1;
+    }
+    public Inventory getInventory(){
+        return inventory;
     }
     public void addItem(Item item, int code){
         inventory.addItem(item, code);
     }
-    public void isSoldOut(int code){
-        inventory.isSoldOut(code);
+    public void isSoldOut(){
+        inventory.isSoldOut(selectedItemCode);
     }
     public void insertCoin(Coin coin){
         this.currentBalance += coin.getValue();
-        currentState.insertCoin(coin);
+        currentState.insertCoin(this, coin);
     }
     public void selectItem(int code){
-        currentState.selectItem(code);
+        selectedItemCode = code;
+        currentState.selectItem(this, code);
     }
-    public void dispenseItem(int code){
-        inventory.dispenseItem(code);
+    public void dispenseItem(){
+        currentState.dispenseItem(this);
+    }
+    public void setState(State state){
+        this.currentState = state;
     }
 }
 interface State{
-    void insertCoin(Coin coin);
-    void selectItem(int code);
-    void dispenseItem(int code);
-    void refund();
+    void insertCoin(VendingMachine vendingMachine, Coin coin);
+    void selectItem(VendingMachine vendingMachine, int code);
+    void dispenseItem(VendingMachine vendingMachine);
+    void refund(VendingMachine vendingMachine);
 }
 class IdleState implements State{
-    private VendingMachine vendingMachine;
-    public IdleState(VendingMachine vendingMachine){
-        this.vendingMachine = vendingMachine;
-    }
-    public void insertCoin(Coin coin){
+    private IdleState(){}
+    public static final IdleState instance = new IdleState();
+    public void insertCoin(VendingMachine vendingMachine, Coin coin){
         System.out.println("Coin inserted");
-        vendingMachine.currentState = new HasMoneyState(vendingMachine);
+        vendingMachine.setState(HasMoneyState.instance);
     }
-    public void selectItem(int code){
+    public void selectItem(VendingMachine vendingMachine, int code){
         throw new IllegalStateException("Insert coin first");
     }
 
-    public void dispenseItem(int code){
+    public void dispenseItem(VendingMachine vendingMachine){
         throw new IllegalStateException("Insert coin first");
     }
-    public void refund(){
+    public void refund(VendingMachine vendingMachine){
         throw new IllegalStateException("Insert coin first");
     }
 }
 
 class HasMoneyState implements State{
-    private VendingMachine vendingMachine;
-    public HasMoneyState(VendingMachine vendingMachine){
-        this.vendingMachine = vendingMachine;
-    }
-    public void insertCoin(Coin coin){
+    private HasMoneyState(){}
+    public static final HasMoneyState instance = new HasMoneyState();
+
+    public void insertCoin(VendingMachine vendingMachine, Coin coin){
         System.out.println("Coin inserted");
     }
-    public void selectItem(int code){
+    public void selectItem(VendingMachine vendingMachine, int code){
         System.out.println("Item selected");
         vendingMachine.selectedItemCode = code;
-        vendingMachine.currentState = new DispenseState(vendingMachine);
+        vendingMachine.setState( DispenseState.instance);
     }
-    public void dispenseItem(int code){
+    public void dispenseItem(VendingMachine vendingMachine){
         throw new IllegalStateException("Item cannot be dispensed without selecting it");
     }
-    public void refund(){
+    public void refund(VendingMachine vendingMachine){
         System.out.println("Refunding money");
         vendingMachine.currentBalance = 0;
-        vendingMachine.currentState = new IdleState(vendingMachine);
+        vendingMachine.setState(IdleState.instance);
     }   
 }
 class DispenseState implements State{
-    private VendingMachine vendingMachine;
-    public DispenseState(VendingMachine vendingMachine){
-        this.vendingMachine = vendingMachine;
-    }
-    public void dispenseItem(int code){
+    public static final DispenseState instance = new DispenseState();
+    private DispenseState(){}
+    public void dispenseItem(VendingMachine vendingMachine){
         System.out.println("Item dispensed");
-        vendingMachine.dispenseItem(code);
-        vendingMachine.currentBalance = 0;
-        vendingMachine.currentState = new IdleState(vendingMachine);
+        Inventory inventory = vendingMachine.getInventory();
+        Item item = inventory.getItem(vendingMachine.selectedItemCode);
+        if(item.price > vendingMachine.currentBalance){
+            throw new IllegalStateException("Insufficient balance");
+        }
+        inventory.dispenseItem(vendingMachine.selectedItemCode);
+        vendingMachine.currentBalance = vendingMachine.currentBalance - item.price;
+        vendingMachine.setState(IdleState.instance);
         vendingMachine.selectedItemCode = -1;
     }
-    public void insertCoin(Coin coin){
+    public void insertCoin(VendingMachine vendingMachine, Coin coin){
         throw new IllegalStateException("Item is being dispensed");
     }
-    public void selectItem(int code){
+    public void selectItem(VendingMachine vendingMachine, int code){
         throw new IllegalStateException("Item is being dispensed");
     }
-    public void refund(){
+    public void refund(VendingMachine vendingMachine){
         throw new IllegalStateException("Item is being dispensed");
     }
 }
