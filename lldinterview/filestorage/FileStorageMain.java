@@ -25,10 +25,28 @@ class FileSystemController {
     public FileSystemController(FileSystemNode root) {
         this.root = root;
     }
+    public boolean validatePath(String path) {
+        String[] pathParts = path.split("/");
+        FileSystemNode node = root;
+        for (int i = 1; i < pathParts.length - 1; i++) {
+            if(node ==null || !(node instanceof Directory)) {
+                return false;
+            }
+            Map<String, FileSystemNode> children = ((Directory)node).children;
+            if (!children.containsKey(pathParts[i])) {
+                return false;
+            }
+            node = children.get(pathParts[i]);
+        }
+        return true;
+    }
 
     public void createFile(String path, String content) {
         String[] pathParts = path.split("/");
         FileSystemNode node = root;
+        if (!validatePath(path)) {
+            throw new IllegalArgumentException("Invalid path");
+        }
         String fileName = pathParts[pathParts.length - 1];
         for (int i = 1; i < pathParts.length - 1; i++) {
             Map<String, FileSystemNode> children = ((Directory)node).children;
@@ -44,6 +62,9 @@ class FileSystemController {
     public void createDirectory(String path) {
         String[] pathParts = path.split("/");
         FileSystemNode node = root;
+        if (!validatePath(path)) {
+            throw new IllegalArgumentException("Invalid path");
+        }
         String dirName = pathParts[pathParts.length - 1];
         for (int i = 1; i < pathParts.length - 1; i++) {
             Map<String, FileSystemNode> children = ((Directory)node).children;
@@ -66,7 +87,6 @@ abstract class FileSystemNode {
 }
 
 class File extends FileSystemNode {
-    String name;
     String content;
     String extension;
 
