@@ -2,71 +2,122 @@ package lldinterview.loggersystem;
 
 public class LoggerSystemMain {
     public static void main(String[] args) {
-        Appender consoleAppender = new ConsoleAppender();
-        Logger logger1 = new Logger(consoleAppender);
+        AppenderStrategy consoleAppender = new ConsoleAppender();
+        AppenderStrategy fileAppender = new FileAppender();
+        AppenderStrategy databaseAppender = new DatabaseAppender();
+        LoggerConfig devConfig = new LoggerConfig(LogLevel.INFO.getPriority(), LogLevel.INFO,
+                new AppenderStrategy[] { consoleAppender, fileAppender, databaseAppender });
+        Logger logger1 = new Logger(devConfig);
         logger1.info("This is an info message");
         logger1.error("This is an error message");
 
-        Appender fileAppender = new FileAppender();
-        Logger logger2 = new Logger(fileAppender);
+        LoggerConfig fileConfig = new LoggerConfig(LogLevel.INFO.getPriority(), LogLevel.INFO,
+                new AppenderStrategy[] { fileAppender });
+        Logger logger2 = new Logger(fileConfig);
         logger2.info("This is an info message");
         logger2.error("This is an error message");
 
-        Appender databaseAppender = new DatabaseAppender();
-        Logger logger3 = new Logger(databaseAppender);
+        LoggerConfig databaseConfig = new LoggerConfig(LogLevel.INFO.getPriority(), LogLevel.INFO,
+                new AppenderStrategy[] { databaseAppender });
+        Logger logger3 = new Logger(databaseConfig);
         logger3.info("This is an info message");
         logger3.error("This is an error message");
     }
 }
-class Logger{
-    private Appender appender;
-    public Logger(Appender appender){
-        this.appender = appender;
+
+class Logger {
+    private LoggerConfig config;
+
+    public Logger(LoggerConfig config) {
+        this.config = config;
     }
-    public void info(String message){
-        appender.append(new LoggerMessage(message, "INFO", System.currentTimeMillis() + ""));
+
+    public void info(String message) {
+        if (LogLevel.INFO.getPriority() >= config.priority) {
+            for (AppenderStrategy app : config.appender) {
+                app.append(new LoggerMessage(message, LogLevel.INFO, System.currentTimeMillis()));
+            }
+        }
     }
-    public void error(String message){
-        appender.append(new LoggerMessage(message, "ERROR", System.currentTimeMillis() + ""));
+
+    public void error(String message) {
+        if (LogLevel.ERROR.getPriority() >= config.priority) {
+            for (AppenderStrategy app : config.appender) {
+                app.append(new LoggerMessage(message, LogLevel.ERROR, System.currentTimeMillis()));
+            }
+        }
     }
 }
-interface Appender{
+
+interface AppenderStrategy {
     public void append(LoggerMessage message);
 }
-class ConsoleAppender implements Appender{
+
+class ConsoleAppender implements AppenderStrategy {
     @Override
     public void append(LoggerMessage message) {
         System.out.println("Writing to console: " + message);
         System.out.println(message);
     }
 }
-class FileAppender implements Appender{
+
+class FileAppender implements AppenderStrategy {
     @Override
     public void append(LoggerMessage message) {
-        //write to file
+        // write to file
         System.out.println("Writing to file: " + message);
         System.out.println(message);
     }
 }
-class DatabaseAppender implements Appender{
+
+class DatabaseAppender implements AppenderStrategy {
     @Override
     public void append(LoggerMessage message) {
-        //write to database
+        // write to database
         System.out.println("Writing to database: " + message);
         System.out.println(message);
     }
 }
-class LoggerMessage{
-    private String message;
-    private String logLevel;
-    private String timestamp;
-    public LoggerMessage(String message, String logLevel, String timestamp){
+
+class LoggerMessage {
+    private final String message;
+    private final LogLevel logLevel;
+    private final long timestamp;
+
+    public LoggerMessage(String message, LogLevel logLevel, long timestamp) {
         this.message = message;
         this.logLevel = logLevel;
         this.timestamp = timestamp;
     }
+
     @Override
     public String toString() {
         return "[" + timestamp + "] " + logLevel + ": " + message;
+    }
+}
+
+class LoggerConfig {
+    int priority;
+    LogLevel logLevel;
+    AppenderStrategy appender[];
+
+    public LoggerConfig(int priority, LogLevel logLevel, AppenderStrategy appender[]) {
+        this.priority = priority;
+        this.logLevel = logLevel;
+        this.appender = appender;
+    }
+}
+
+enum LogLevel {
+    INFO(2), ERROR(4), DEBUG(1), WARN(3);
+
+    private int priority;
+
+    LogLevel(int priority) {
+        this.priority = priority;
+    }
+
+    public int getPriority() {
+        return priority;
     }
 }
