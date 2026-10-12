@@ -14,19 +14,22 @@ public class ThreadBasic {
 
 
 
-        MyCallableTask task = new MyCallableTask();
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        Future<String> future = executor.submit(task);
-        System.out.println("Task submitted, waiting for result..."+ future);
-        try {
-            String result = future.get(); // This will block until the task is complete
-            System.out.println("Result from callable: " + result);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            executor.shutdown();
-        }
-        System.out.println("Main thread finished execution.");
+        // MyCallableTask task = new MyCallableTask();
+        // ExecutorService executor = Executors.newFixedThreadPool(2);
+        // Future<String> future = executor.submit(task);
+        // System.out.println("Task submitted, waiting for result..."+ future);
+        // try {
+        //     String result = future.get(); // This will block until the task is complete
+        //     System.out.println("Result from callable: " + result);
+        // } catch (Exception e) {
+        //     e.printStackTrace();
+        // } finally {
+        //     executor.shutdown();
+        // }
+        // System.out.println("Main thread finished execution.");
+        MyThread1 t = new MyThread1(); 
+        t.start(); // Starts a separate thread 
+        System.out.println("Main thread is running"); 
     }
 }
 class MyThread extends Thread {
@@ -58,3 +61,13 @@ class MyCallableTask implements Callable<String>{
         return "Task completed";
     }
 }
+
+class MyThread1 extends Thread { 
+    public void run() { 
+        try { 
+            throw new RuntimeException("Exception in thread"); 
+        } catch (Exception e) { 
+            System.out.println("Caught exception in thread: " + e.getMessage()); 
+        } 
+    } 
+} 
