@@ -51,19 +51,19 @@ class Chef implements Runnable {
     }
 
     public void run() {
-try{
-        for (int i = 0; i < 2; i++) {
-            Thread.sleep(2000);
-            synchronized (lock) {
+        try {
+            for (int i = 0; i < 2; i++) {
+                Thread.sleep(2000);
+                synchronized (lock) {
                     WaitAndNotifyRealLife.log(Thread.currentThread().getName() + " has started an order prep" + i);
                     WaitAndNotifyRealLife.mealsReady++;
-                    WaitAndNotifyRealLife.log(Thread.currentThread().getName() + " has prepared an order , inform waiter");
+                    WaitAndNotifyRealLife
+                            .log(Thread.currentThread().getName() + " has prepared an order , inform waiter");
                     lock.notifyAll();
+                }
+                // Thread.sleep(100);
             }
-            // Thread.sleep(100);
-        }
-    }
-        catch (Exception e) {
+        } catch (Exception e) {
             WaitAndNotifyRealLife.log(Thread.currentThread().getName() + " Exception in run method of Chef ");
 
         }
