@@ -32,9 +32,10 @@ class Task implements Runnable {
         System.out.println("Task " + taskId + " is being executed by " + Thread.currentThread().getName());
         try {
             Thread.sleep(2000); // Simulate some work
+            System.out.println("Task " + taskId + " completed by " + Thread.currentThread().getName());
         } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            System.out.println("Task " + taskId + " was interrupted.");
+            // Thread.currentThread().interrupt();
         }
-        System.out.println("Task " + taskId + " completed by " + Thread.currentThread().getName());
     }
 }
