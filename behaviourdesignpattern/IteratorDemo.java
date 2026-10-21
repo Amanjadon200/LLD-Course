@@ -77,8 +77,7 @@ class Playlist {
     public PlayListIterator iterator(String iterator) {
         switch (iterator) {
             case "simple":
-                PlayListIterator itr = new simplePlayListIterator(songs);
-                return itr;
+                return new simplePlayListIterator(songs);
             case "random":
                 return new randomPlayListIterator(songs);
             default:
