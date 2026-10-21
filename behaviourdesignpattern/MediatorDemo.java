@@ -7,13 +7,13 @@ import java.util.List;
 public class MediatorDemo {
     public static void main(String[] args) {
         ChatRoom chatRoom = new ChatRoom("coding channel");
-        User user1 = new User("aman", chatRoom);
-        User user2 = new User("naman", chatRoom);
-        User user3 = new User("raman", chatRoom);
+        User user1 = new User("aman");
+        User user2 = new User("naman");
+        User user3 = new User("raman");
         chatRoom.addUser(user1);
         chatRoom.addUser(user2);
         chatRoom.addUser(user3);
-        user1.sendMessageToChat("aman is a greatest coder of all time");
+        user1.sendMessageToChat("aman is a greatest coder of all time", chatRoom);
     }
 
 }
@@ -22,17 +22,16 @@ class User {
     String name;
     ChatRoom chatRoom;
 
-    public User(String name, ChatRoom chatRoom) {
+    public User(String name) {
         this.name = name;
-        this.chatRoom = chatRoom;
     }
 
-    public void sendMessageToChat(String message) {
-        chatRoom.sendMessage(message, this);
+    public void sendMessageToChat(String message, ChatRoom chatRoom) {
+        chatRoom.broadcast(message, this);
     }
 
     public void receiveMessage(String message, User sender) {
-        System.out.println("got the message " + message + " from " + sender.name);
+        System.out.println(this.name+" got the message " + message + " from " + sender.name);
     }
 
 }
@@ -50,7 +49,7 @@ class ChatRoom {
         users.add(user);
     }
 
-    public void sendMessage(String message, User sender) {
+    public void broadcast(String message, User sender) {
         Iterator<User> iterator = users.iterator();
         while (iterator.hasNext()) {
             User user = iterator.next();
